@@ -1,0 +1,255 @@
+    <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Payments</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            background: #0d1b3d;
+            color: white;
+            padding-top: 20px;
+        }
+
+        .sidebar h3 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .sidebar a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 15px 20px;
+            transition: 0.3s;
+        }
+
+        .sidebar a:hover {
+            background: #1b2c59;
+        }
+
+        .content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-custom {
+            background: #0d1b3d;
+            color: white;
+        }
+
+        .btn-custom:hover {
+            background: #1b2c59;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <h3>
+        <i class="bi bi-shield-check"></i>
+        Seguros App
+    </h3>
+
+    <a th:href="@{/clients}">
+        <i class="bi bi-people"></i> Clients
+    </a>
+
+    <a th:href="@{/insurances}">
+        <i class="bi bi-shield"></i> Insurances
+    </a>
+
+    <a th:href="@{/policies}">
+        <i class="bi bi-file-earmark-text"></i> Policies
+    </a>
+
+    <a th:href="@{/payments}">
+        <i class="bi bi-cash"></i> Payments
+    </a>
+
+    <a th:href="@{/logout}">
+        <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
+</div>
+
+<div class="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <!-- Título de la página -->
+        <h2 class="mb-0">
+            <i class="bi bi-cash-stack"></i>
+            Payments List
+        </h2>
+
+        <!-- Contenedor de botones alineados horizontalmente -->
+       <div class="d-flex flex-wrap gap-2">
+
+            <!-- Reporte PDF -->
+            <a sec:authorize="hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE')"
+               th:href="@{/payments/report}"
+               class="btn btn-danger"
+               target="_blank">
+
+                <i class="bi bi-file-earmark-pdf"></i>
+                Payments Report
+
+            </a>
+
+            <!-- Dashboard -->
+            <a th:href="@{/dashboard}"
+               class="btn btn-outline-secondary">
+
+                <i class="bi bi-house-door"></i>
+                Dashboard
+
+            </a>
+
+            <!-- Nuevo pago -->
+            <a sec:authorize="hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE')"
+               th:href="@{/payments/new}"
+               class="btn btn-custom">
+
+                <i class="bi bi-plus-circle"></i>
+                New Payment
+
+            </a>
+
+        </div>
+
+    </div>
+    
+    
+
+    <!-- Mensaje de éxito -->
+    <div th:if="${success}"
+         class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
+        <i class="bi bi-check-circle-fill"></i>
+
+        <span th:text="${success}"></span>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
+
+    </div>
+
+
+
+        <!-- Formulario para filtrar pagos por fecha -->
+    <form th:action="@{/payments}" method="get" class="mb-4">
+
+        <div class="row">
+
+            <!-- Campo para seleccionar la fecha -->
+            <div class="col-md-4">
+                <input type="date"
+                       name="paymentDate"
+                       class="form-control"
+                       th:value="${paymentDate}">
+            </div>
+
+            <!-- Botón para aplicar el filtro -->
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100"
+                        type="submit">
+                    <i class="bi bi-search"></i>
+                    Filter
+                </button>
+            </div>
+
+        </div>
+
+    </form>
+
+    <div class="card card-custom p-4">
+
+        <table class="table table-hover">
+
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Installments</th>
+                    <th>Policy</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr th:each="p : ${payments}">
+                    <td th:text="${p.paymentDate}"></td>
+                    <td th:text="${p.amount}"></td>
+                    <td th:text="${p.paymentMethod}"></td>
+                    <td th:text="${p.installments}"></td>
+                    <td th:text="${p.policy.policyNumber}"></td>
+                    <td>
+
+                        <!-- Descargar factura PDF -->
+                        <a sec:authorize="hasAnyAuthority('ROLE_ADMIN','ROLE_EMPLOYEE', 'ROLE_CLIENT')"
+                           th:href="@{/payments/invoice/{id}(id=${p.id})}"
+                           class="btn btn-danger btn-sm"
+                           target="_blank"
+                           title="Download Invoice PDF">
+
+                            <i class="bi bi-file-earmark-pdf"></i>
+
+                        </a>
+                        
+                        <!-- Enviar factura por correo -->
+                       <a th:href="@{/payments/send-email/{id}(id=${p.id})}"
+                           class="btn btn-primary btn-sm">
+                              
+                            <i class="bi bi-envelope-fill"></i> 
+                       </a>
+                        
+
+                        <!-- Eliminar SOLO ADMIN -->
+                        <a sec:authorize="hasAuthority('ROLE_ADMIN')"
+                           th:href="@{/payments/delete/{id}(id=${p.id})}"
+                           class="btn btn-outline-danger btn-sm"
+                           title="Delete Payment">
+
+                            <i class="bi bi-trash"></i>
+
+                        </a>
+
+                    </td>
+                </tr>
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+    
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
